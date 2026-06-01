@@ -4,7 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0f1525">
-<title>ANTES O DESPUÉS</title>
+<title>ANTES o DESPUÉS — ¿qué pasó primero?</title>
+<meta name="description" content="Juego web para adivinar qué pasó antes o después en la historia. 2883 eventos, 8 modos de juego, reto diario.">
+<link rel="icon" type="image/png" href="img/logo.png">
+<link rel="apple-touch-icon" href="img/logo.png">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="ANTES o DESPUÉS — ¿qué pasó primero?">
+<meta property="og:description" content="Juego web para adivinar qué evento histórico pasó antes o después. 2883 eventos, 8 modos, reto diario.">
+<meta property="og:image" content="img/banner.png">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ANTES o DESPUÉS — ¿qué pasó primero?">
+<meta name="twitter:description" content="Juego web para adivinar qué evento histórico pasó antes o después. 2883 eventos, 8 modos, reto diario.">
+<meta name="twitter:image" content="img/banner.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:ital,wght@1,800;1,900&family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
@@ -366,8 +379,29 @@
     z-index: 50; display: flex; flex-direction: column; align-items: center;
     padding: calc(28px + var(--safe-top)) 20px calc(20px + var(--safe-bot));
     overflow-y: auto; overscroll-behavior: contain; animation: menuFade .5s ease-out;
-    position: fixed; }
-  .menu-deco { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    position: fixed;
+    background-image: url('img/fondo.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  /* Velo oscuro encima del fondo para legibilidad */
+  #menu::after {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(10,13,31,.35) 0%, rgba(10,13,31,.7) 100%);
+  }
+  .m-banner { width: 100%; max-width: 520px; height: auto; display: block;
+    margin: 0 auto 14px; border-radius: 16px;
+    filter: drop-shadow(0 12px 36px rgba(155,93,229,.4)) drop-shadow(0 0 60px rgba(255,209,102,.18));
+    animation: bannerEnter .7s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes bannerEnter {
+    0%   { opacity: 0; transform: translateY(-12px) scale(.92); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .menu-deco { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+    display: none; /* desactivado porque ya tenemos fondo.png con decoraciones */ }
   .deco { position: absolute; color: var(--text); opacity: .07; font-size: 130px;
     filter: drop-shadow(0 0 30px rgba(255,209,102,.2)); }
   /* Cada deco con animación única */
@@ -1055,8 +1089,8 @@
       <iconify-icon icon="lucide:rocket" class="deco deco-8"></iconify-icon>
       <iconify-icon icon="lucide:compass" class="deco deco-9"></iconify-icon>
     </div>
-    <div class="m-title">ANTES <span class="dot">o</span> DESPUÉS</div>
-    <div class="m-tagline">¿qué pasó primero?</div>
+    <img class="m-banner" src="img/banner.png" alt="ANTES o DESPUÉS — ¿qué pasó primero?">
+    <div class="m-title sr-only">ANTES o DESPUÉS</div>
 
     <div id="dailyCard">
       <iconify-icon class="day-ico" id="dayIcon" icon="lucide:sparkles"></iconify-icon>
