@@ -382,13 +382,14 @@
     position: fixed;
     background-image: url('img/fondo.png');
     background-size: cover;
-    background-position: center;
+    background-position: center center;
     background-repeat: no-repeat;
+    background-attachment: fixed;
   }
   /* Velo oscuro encima del fondo para legibilidad */
   #menu::after {
-    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-    background: radial-gradient(ellipse at center, rgba(10,13,31,.35) 0%, rgba(10,13,31,.7) 100%);
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(10,13,31,.35) 0%, rgba(10,13,31,.75) 100%);
   }
   .m-banner { width: 100%; max-width: 520px; height: auto; display: block;
     margin: 0 auto 14px; border-radius: 16px;
