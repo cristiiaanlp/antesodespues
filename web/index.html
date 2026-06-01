@@ -449,25 +449,19 @@
   #dailyCard {
     width: 100%; max-width: 520px; margin-bottom: 24px;
     background: linear-gradient(135deg, rgba(255,209,102,.20), rgba(247,127,0,.14), rgba(155,93,229,.12));
-    border: 1px solid rgba(255,209,102,.50);
+    border: 2px solid rgba(255,209,102,.55);
     border-radius: 22px; padding: 26px 32px; cursor: pointer;
     display: flex; align-items: center; gap: 28px;
     transition: all .35s cubic-bezier(.34,1.56,.64,1);
     box-shadow: 0 10px 30px rgba(255,209,102,.18), inset 0 1px 0 rgba(255,255,255,.10);
-    position: relative; overflow: hidden;
+    position: relative;
+    animation: dailyGlow 5s ease-in-out infinite;
   }
-  #dailyCard::before {
-    content: ""; position: absolute; inset: -2px; border-radius: 22px; padding: 2px;
-    background: linear-gradient(135deg, rgba(255,209,102,.6), rgba(247,127,0,.4), rgba(155,93,229,.5), rgba(255,209,102,.6));
-    background-size: 300% 300%;
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask-composite: exclude; -webkit-mask-composite: xor;
-    animation: dailyBorder 6s linear infinite;
-    pointer-events: none;
+  @keyframes dailyGlow {
+    0%, 100% { box-shadow: 0 10px 30px rgba(255,209,102,.20), inset 0 1px 0 rgba(255,255,255,.10); border-color: rgba(255,209,102,.55); }
+    50%      { box-shadow: 0 14px 44px rgba(247,127,0,.35), 0 0 60px rgba(155,93,229,.18), inset 0 1px 0 rgba(255,255,255,.14); border-color: rgba(247,127,0,.7); }
   }
-  @keyframes dailyBorder { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
-  #dailyCard:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 14px 40px rgba(255,209,102,.30); }
+  #dailyCard:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 14px 40px rgba(255,209,102,.35); }
   #dailyCard .day-ico { font-size: 38px; filter: drop-shadow(0 0 14px rgba(255,209,102,.55));
     animation: dayIcoFloat 3s ease-in-out infinite; flex-shrink: 0; }
   @keyframes dayIcoFloat {
@@ -476,17 +470,20 @@
   }
   #dailyCard .day-info { flex: 1; min-width: 0; }
   #dailyCard .day-title { font-family: var(--display); font-size: 22px; font-weight: 400;
-    letter-spacing: 2px; color: var(--gold); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    letter-spacing: 2px; color: var(--gold); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    line-height: 1.1; }
   #dailyCard .day-sub { font-size: 12px; color: var(--dim); margin-top: 6px; font-weight: 500; line-height: 1.4; }
   #dailyCard .day-arrow { color: var(--gold); font-size: 26px; font-weight: 900;
     transition: transform .3s; flex-shrink: 0; }
   #dailyCard:hover .day-arrow { transform: translateX(4px); }
   #dailyCard.done { background: linear-gradient(135deg, rgba(6,214,160,.16), rgba(76,201,240,.12));
-    border-color: rgba(6,214,160,.5); box-shadow: 0 10px 30px rgba(6,214,160,.18); }
-  #dailyCard.done .day-title { color: var(--green); }
-  #dailyCard.done::before {
-    background: linear-gradient(135deg, rgba(6,214,160,.6), rgba(76,201,240,.4), rgba(6,214,160,.6));
+    border-color: rgba(6,214,160,.55);
+    animation: dailyGlowDone 5s ease-in-out infinite; }
+  @keyframes dailyGlowDone {
+    0%, 100% { box-shadow: 0 10px 30px rgba(6,214,160,.20); border-color: rgba(6,214,160,.55); }
+    50%      { box-shadow: 0 14px 44px rgba(76,201,240,.30), 0 0 60px rgba(6,214,160,.20); border-color: rgba(76,201,240,.7); }
   }
+  #dailyCard.done .day-title { color: var(--green); }
 
   /* Selector de modos */
   .modes { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
