@@ -1,0 +1,21 @@
+{
+  "name": "ANTES o DESPUÉS — ¿qué pasó primero?",
+  "short_name": "Antes o Después",
+  "description": "Juego web para adivinar qué evento histórico pasó antes o después. 2883 eventos en 14 categorías.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0f1525",
+  "background_color": "#0a0d1f",
+  "lang": "es",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "img/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "education", "entertainment"]
+}

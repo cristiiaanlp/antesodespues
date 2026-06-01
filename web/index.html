@@ -8,6 +8,7 @@
 <meta name="description" content="Juego web para adivinar qué pasó antes o después en la historia. 2883 eventos, 8 modos de juego, reto diario.">
 <link rel="icon" type="image/png" href="img/logo.png">
 <link rel="apple-touch-icon" href="img/logo.png">
+<link rel="manifest" href="manifest.json">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="ANTES o DESPUÉS — ¿qué pasó primero?">
@@ -971,6 +972,163 @@
     .achievs-grid { grid-template-columns: repeat(4, 1fr); }
     .dec-grid { grid-template-columns: repeat(5, 1fr); }
   }
+
+  /* ============ TUTORIAL ============ */
+  #tutorial { position: fixed; inset: 0; z-index: 250;
+    background: rgba(8,11,22,.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #tutorial.hidden { display: none; }
+  .tut-card { background: linear-gradient(160deg, #1d2745, #0f1525);
+    border: 1px solid rgba(255,209,102,.45); border-radius: 22px;
+    padding: 30px 24px; max-width: 380px; width: 100%; text-align: center;
+    animation: gameInUp .5s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 24px 70px rgba(0,0,0,.6), 0 0 80px rgba(255,209,102,.15); }
+  .tut-progress { display: flex; justify-content: center; gap: 8px; margin-bottom: 18px; }
+  .tut-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.18); transition: all .25s; }
+  .tut-dot.active { background: var(--gold); width: 22px; border-radius: 999px; box-shadow: 0 0 12px rgba(255,209,102,.6); }
+  .tut-ico { font-size: 64px; color: var(--gold); display: block; margin: 4px auto 12px;
+    filter: drop-shadow(0 0 20px rgba(255,209,102,.5));
+    animation: tutIcoFloat 3s ease-in-out infinite; }
+  @keyframes tutIcoFloat { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
+  .tut-step h3 { font-family: var(--display); font-size: 22px; font-weight: 400; letter-spacing: 2.5px;
+    color: var(--gold); margin: 0 0 10px; }
+  .tut-step p { font-size: 14px; line-height: 1.5; color: var(--text); margin: 0 0 20px; }
+  .tut-step p b { color: var(--gold); }
+  .tut-actions { display: flex; gap: 10px; }
+  .tut-actions button { flex: 1; padding: 12px 16px; border-radius: 999px; cursor: pointer;
+    font-family: var(--display); font-size: 15px; font-weight: 400; letter-spacing: 1.5px;
+    border: none; transition: all .15s; }
+  .tut-skip { background: rgba(255,255,255,.06); color: var(--dim); border: 1px solid rgba(255,255,255,.12) !important; }
+  .tut-skip:hover { background: rgba(255,255,255,.12); color: var(--text); }
+  .tut-next { background: linear-gradient(135deg, var(--gold), var(--gold-warm)); color: #0f1525;
+    box-shadow: 0 6px 18px rgba(255,209,102,.45); }
+  .tut-next:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(255,209,102,.6); }
+
+  /* ============ ATAJOS DE TECLADO ============ */
+  #shortcuts { position: fixed; inset: 0; z-index: 120; background: rgba(8,11,22,.94);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #shortcuts.hidden { display: none; }
+  .sh-card { background: linear-gradient(160deg, #1d2745, #0f1525); border: 1px solid var(--card-bd);
+    border-radius: 20px; padding: 24px; max-width: 420px; width: 100%; animation: gameInUp .4s ease-out; }
+  .sh-card h2 { font-family: var(--display); font-size: 18px; letter-spacing: 2px; margin: 0 0 16px;
+    text-align: center; color: var(--gold); font-weight: 400; }
+  .sh-grid { display: flex; flex-direction: column; gap: 10px; }
+  .sh-grid > div { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 6px 4px;
+    border-bottom: 1px solid rgba(255,255,255,.04); }
+  .sh-grid > div span { flex: 1; color: var(--dim); }
+  .sh-grid kbd { display: inline-block; padding: 4px 9px; background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.18); border-radius: 6px; font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 700; color: var(--gold); min-width: 22px; text-align: center;
+    box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+  .sh-close { width: 100%; padding: 12px; background: var(--gold); color: #0f1525; border: none;
+    border-radius: 999px; font-weight: 800; cursor: pointer; margin-top: 14px; letter-spacing: 1.5px;
+    font-family: var(--display); font-size: 15px; }
+
+  /* ============ CARD FLIP 3D ============ */
+  .card { perspective: 1200px; }
+  .card.flipping { animation: cardFlip .9s cubic-bezier(.4,.0,.2,1); }
+  @keyframes cardFlip {
+    0%   { transform: rotateY(0); }
+    50%  { transform: rotateY(180deg) scale(1.05); }
+    100% { transform: rotateY(0); }
+  }
+  .card.flipping .card-year.hidden-q { opacity: 0; }
+
+  /* ============ PARTICLES dorados ============ */
+  .particle { position: fixed; pointer-events: none; z-index: 92; border-radius: 50%;
+    width: 8px; height: 8px; background: radial-gradient(circle, var(--gold), transparent 70%);
+    animation: particleFly .9s ease-out forwards; }
+  @keyframes particleFly {
+    0%   { opacity: 1; transform: translate(0,0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--px,0), var(--py,-80px)) scale(.4); }
+  }
+  /* Variantes de confetti con formas */
+  .confetti.star, .confetti.heart, .confetti.bolt { width: 14px; height: 14px; background: transparent;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .confetti.star::before  { content: "★"; color: var(--gold); }
+  .confetti.heart::before { content: "♥"; color: var(--red); }
+  .confetti.bolt::before  { content: "⚡"; color: var(--gold-warm); }
+
+  /* ============ MODAL LOGRO MEJORADO ============ */
+  #achievBig { position: fixed; inset: 0; z-index: 220; display: none; align-items: center; justify-content: center;
+    background: rgba(8,11,22,.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #achievBig.show { display: flex; animation: fadeIn .3s; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .ab-card { background: linear-gradient(160deg, #2d1c54, #1d2745);
+    border: 2px solid var(--gold); border-radius: 24px; padding: 36px 28px; text-align: center;
+    max-width: 360px; width: 90%; position: relative; overflow: hidden;
+    animation: abPop .7s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 30px 80px rgba(0,0,0,.7), 0 0 100px rgba(255,209,102,.45); }
+  @keyframes abPop { 0% { opacity: 0; transform: scale(.4) rotate(-10deg); }
+    60% { transform: scale(1.08) rotate(2deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+  .ab-rays { position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent 0deg, rgba(255,209,102,.18) 20deg, transparent 40deg, rgba(255,209,102,.18) 70deg, transparent 90deg);
+    animation: raySpin 8s linear infinite; pointer-events: none; }
+  @keyframes raySpin { to { transform: rotate(360deg); } }
+  .ab-content { position: relative; z-index: 1; }
+  .ab-tag { font-family: var(--display); font-size: 13px; letter-spacing: 3px; color: var(--gold); opacity: .8; margin-bottom: 8px; }
+  .ab-ico-wrap { width: 110px; height: 110px; margin: 0 auto 16px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--gold-warm));
+    display: flex; align-items: center; justify-content: center; font-size: 56px;
+    box-shadow: 0 10px 30px rgba(255,209,102,.5), inset 0 -4px 12px rgba(0,0,0,.2);
+    animation: abIcoBounce 2s ease-in-out infinite; }
+  @keyframes abIcoBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .ab-name { font-family: var(--display); font-size: 28px; font-weight: 400; letter-spacing: 2.5px;
+    color: var(--text); margin-bottom: 6px; }
+  .ab-desc { font-size: 13px; color: var(--dim); margin-bottom: 22px; line-height: 1.4; }
+  .ab-close { padding: 12px 28px; background: var(--gold); color: #0f1525; border: none; border-radius: 999px;
+    font-family: var(--display); font-size: 15px; font-weight: 400; letter-spacing: 2px; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(255,209,102,.5); }
+
+  /* ============ TRANSICIONES DE PANTALLA ============ */
+  #menu.slide-out { animation: slideOut .35s ease-in forwards; }
+  #app.slide-in   { animation: slideInFromR .4s cubic-bezier(.2,.8,.2,1); }
+  @keyframes slideOut { to { opacity: 0; transform: translateX(-30px); } }
+  @keyframes slideInFromR { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* ============ EFEMÉRIDE EN MENÚ ============ */
+  #onThisDay { width: 100%; max-width: 520px; margin-bottom: 18px;
+    background: linear-gradient(135deg, rgba(76,201,240,.14), rgba(91,108,245,.10));
+    border: 1px solid rgba(76,201,240,.35); border-radius: 16px; padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 6px 20px rgba(76,201,240,.18); }
+  #onThisDay.hidden { display: none; }
+  #onThisDay iconify-icon.otd-ico { font-size: 28px; color: var(--cyan); flex-shrink: 0;
+    filter: drop-shadow(0 0 10px rgba(76,201,240,.5)); }
+  #onThisDay .otd-body { flex: 1; min-width: 0; }
+  #onThisDay .otd-tag { font-family: var(--display); font-size: 11px; letter-spacing: 2px; color: var(--cyan); }
+  #onThisDay .otd-text { font-size: 13px; color: var(--text); margin-top: 3px; font-weight: 600; line-height: 1.35; }
+
+  /* ============ SKELETON ON STEROIDS ============ */
+  .card-skeleton {
+    background: linear-gradient(135deg, rgba(155,93,229,.10) 0%, rgba(91,108,245,.06) 50%, rgba(255,209,102,.10) 100%) !important;
+    background-size: 250% 250% !important;
+    animation: skelGradient 3s ease-in-out infinite, shimmer 1.4s linear infinite !important;
+  }
+  @keyframes skelGradient { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+  /* ============ ACCESIBILIDAD ============ */
+  body[data-a11y="colorblind"] {
+    --green: #0072b2; --red: #d55e00; --gold: #f0e442;
+  }
+  body[data-a11y="colorblind"] .card.correct::after { content: "✓"; position: absolute; top: 10px; right: 50%;
+    transform: translateX(50%); font-size: 56px; color: var(--green); z-index: 10; text-shadow: 0 4px 14px rgba(0,0,0,.7); }
+  body[data-a11y="colorblind"] .card.wrong::after { content: "✗"; position: absolute; top: 10px; right: 50%;
+    transform: translateX(50%); font-size: 56px; color: var(--red); z-index: 10; text-shadow: 0 4px 14px rgba(0,0,0,.7); }
+  body[data-a11y="contrast"] { --text: #ffffff; --dim: #d8d8d8; }
+  body[data-a11y="contrast"] .card-content { background: rgba(0,0,0,.45); }
+  body[data-large] { font-size: 18px; }
+  body[data-large] .card-title { font-size: 22px; }
+  body[data-large] .card-year { font-size: 64px; }
+
+  /* Botón help flotante (atajos / ayuda) */
+  .help-btn { position: fixed; bottom: 16px; right: 16px; z-index: 70;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: var(--text);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: 800;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: all .2s;
+    opacity: .6; }
+  .help-btn:hover { opacity: 1; color: var(--gold); border-color: var(--gold); }
 </style>
 </head>
 <body>
@@ -993,7 +1151,7 @@
       <div id="scoreboard">
         <div id="timerBox"><span class="timer-ico">⏱</span><span id="timer">60</span></div>
         <div id="comboBox"><span class="flame">🔥</span><span id="comboNum">0</span><span id="comboMult">×1</span></div>
-        <div class="score"><span class="label">PUNTOS</span><span id="score" class="num">0</span></div>
+        <div class="score" aria-live="polite"><span class="label">PUNTOS</span><span id="score" class="num">0</span></div>
         <div class="score"><span class="label">RÉCORD</span><span id="best" class="num">0</span></div>
       </div>
     </header>
@@ -1093,6 +1251,14 @@
     <img class="m-banner" src="img/banner.png" alt="ANTES o DESPUÉS — ¿qué pasó primero?">
     <div class="m-title sr-only">ANTES o DESPUÉS</div>
 
+    <div id="onThisDay" class="hidden">
+      <iconify-icon class="otd-ico" icon="lucide:calendar-clock"></iconify-icon>
+      <div class="otd-body">
+        <div class="otd-tag">UN DÍA COMO HOY</div>
+        <div class="otd-text" id="otdText">—</div>
+      </div>
+    </div>
+
     <div id="dailyCard">
       <iconify-icon class="day-ico" id="dayIcon" icon="lucide:sparkles"></iconify-icon>
       <div class="day-info">
@@ -1150,11 +1316,19 @@
     <div class="m-info">Vas a jugar con <b id="poolCount">0</b> eventos</div>
     <div class="menu-actions">
       <button id="btnPlay" class="btn-play">▸ EMPEZAR</button>
-      <button id="btnMulti" class="btn-secondary" title="Multijugador local"><iconify-icon icon="lucide:users-round"></iconify-icon></button>
-      <button id="btnOpenStats" class="btn-secondary" title="Estadísticas"><iconify-icon icon="lucide:bar-chart-3"></iconify-icon></button>
+      <button id="btnMulti" class="btn-secondary" title="Multijugador local" aria-label="Multijugador local"><iconify-icon icon="lucide:users-round"></iconify-icon></button>
+      <button id="btnOpenStats" class="btn-secondary" title="Estadísticas" aria-label="Estadísticas"><iconify-icon icon="lucide:bar-chart-3"></iconify-icon></button>
     </div>
 
-    <div class="m-footer">Imágenes vía Wikipedia · Récord guardado en tu navegador</div>
+    <div class="m-footer">
+      Imágenes vía Wikipedia · Récord guardado en tu navegador<br>
+      <a href="https://github.com/cristiiaanlp/antesodespues/issues/new?template=evento.md&title=Propongo+evento" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;margin-right:10px;">
+        <iconify-icon icon="lucide:plus-circle" style="vertical-align:-2px;"></iconify-icon> Propón un evento
+      </a>
+      <a href="https://buymeacoffee.com/cristiiaanlp" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;">
+        <iconify-icon icon="lucide:coffee" style="vertical-align:-2px;"></iconify-icon> Invítame a un café
+      </a>
+    </div>
   </div>
 
   <!-- ============ GAME OVER ============ -->
@@ -1201,6 +1375,13 @@
         <button class="theme-btn" data-theme="neon">🌈 Neón</button>
         <button class="theme-btn" data-theme="paper">📜 Papel</button>
       </div>
+      <h3><iconify-icon icon="lucide:accessibility" style="vertical-align:-2px;margin-right:4px;"></iconify-icon> ACCESIBILIDAD</h3>
+      <div class="theme-buttons" id="a11yButtons">
+        <button class="theme-btn active" data-a11y="default">Normal</button>
+        <button class="theme-btn" data-a11y="colorblind" title="Sustituye verde/rojo por azul/naranja + iconos ✓✗">Daltónico</button>
+        <button class="theme-btn" data-a11y="contrast" title="Mayor contraste para mejor legibilidad">Alto contraste</button>
+        <button class="theme-btn" id="largeTextBtn" title="Texto más grande">Texto+</button>
+      </div>
       <button id="closeStats" class="stats-close">CERRAR</button>
     </div>
   </div>
@@ -1215,12 +1396,79 @@
     </div>
   </div>
 
+  <!-- ============ MODAL LOGRO IMPORTANTE ============ -->
+  <div id="achievBig">
+    <div class="ab-card">
+      <div class="ab-rays"></div>
+      <div class="ab-content">
+        <div class="ab-tag">¡LOGRO DESBLOQUEADO!</div>
+        <div class="ab-ico-wrap" id="abIco">🏆</div>
+        <div class="ab-name" id="abName">—</div>
+        <div class="ab-desc" id="abDesc">—</div>
+        <button class="ab-close" id="abClose">¡SIGUE!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botón ayuda flotante -->
+  <button class="help-btn" id="helpBtn" aria-label="Atajos de teclado" title="Atajos (?)">?</button>
+
   <!-- ============ REVIEW MODAL ============ -->
   <div id="review" class="hidden">
     <div class="review-card">
       <h2><iconify-icon icon="lucide:list-checks" style="vertical-align:-2px;margin-right:6px;color:var(--gold);"></iconify-icon> RESUMEN DE LA PARTIDA</h2>
       <div class="review-list" id="reviewList"></div>
       <button id="closeReview" class="review-close">CERRAR</button>
+    </div>
+  </div>
+
+  <!-- ============ TUTORIAL ============ -->
+  <div id="tutorial" class="hidden">
+    <div class="tut-card">
+      <div class="tut-progress"><span class="tut-dot active"></span><span class="tut-dot"></span><span class="tut-dot"></span><span class="tut-dot"></span></div>
+      <div class="tut-step" data-step="0">
+        <iconify-icon class="tut-ico" icon="lucide:calendar-check"></iconify-icon>
+        <h3>1. LA REFERENCIA</h3>
+        <p>La carta de arriba (o izquierda) tiene un chip verde <b>REFERENCIA</b> y muestra su año.</p>
+      </div>
+      <div class="tut-step" data-step="1" hidden>
+        <iconify-icon class="tut-ico" icon="lucide:help-circle"></iconify-icon>
+        <h3>2. LA PREGUNTA</h3>
+        <p>La otra tiene chip dorado <b>¿CUÁNDO PASÓ?</b>. Toca <b>ANTES</b> o <b>DESPUÉS</b> según creas que sucedió respecto a la referencia.</p>
+      </div>
+      <div class="tut-step" data-step="2" hidden>
+        <iconify-icon class="tut-ico" icon="lucide:flame"></iconify-icon>
+        <h3>3. RACHA Y COMBO</h3>
+        <p>Encadena aciertos para multiplicar puntos: ×2 a las 3 seguidas, ×3 a las 5, ×5 a las 10. Contestar en menos de 2.5s da bonus 💨.</p>
+      </div>
+      <div class="tut-step" data-step="3" hidden>
+        <iconify-icon class="tut-ico" icon="lucide:gift"></iconify-icon>
+        <h3>4. POWER-UPS</h3>
+        <p>Al acertar pueden caer regalos (vida extra, ×2 puntos, pistas...) y también <b>trolls</b>: botones invertidos, niebla, imagen borrosa. ¡Cuidado!</p>
+      </div>
+      <div class="tut-actions">
+        <button id="tutSkip" class="tut-skip">SALTAR</button>
+        <button id="tutNext" class="tut-next">SIGUIENTE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ATAJOS DE TECLADO ============ -->
+  <div id="shortcuts" class="hidden">
+    <div class="sh-card">
+      <h2><iconify-icon icon="lucide:keyboard" style="vertical-align:-2px;color:var(--gold);"></iconify-icon> ATAJOS DE TECLADO</h2>
+      <div class="sh-grid">
+        <div><kbd>←</kbd> <kbd>A</kbd> <span>Responder ANTES</span></div>
+        <div><kbd>→</kbd> <kbd>D</kbd> <span>Responder DESPUÉS</span></div>
+        <div><kbd>↑</kbd> <span>= ANTES</span></div>
+        <div><kbd>↓</kbd> <span>= DESPUÉS</span></div>
+        <div><kbd>S</kbd> <span>Saltar carta (comodín)</span></div>
+        <div><kbd>H</kbd> <span>Pista del siglo (comodín)</span></div>
+        <div><kbd>Enter</kbd> <span>Confirmar / Empezar</span></div>
+        <div><kbd>Esc</kbd> <span>Volver al menú</span></div>
+        <div><kbd>?</kbd> <span>Mostrar esta ayuda</span></div>
+      </div>
+      <button id="closeShortcuts" class="sh-close">CERRAR</button>
     </div>
   </div>
 

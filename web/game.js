@@ -243,7 +243,16 @@ function flushAchievToasts() {
 function checkAchievements() {
   for (const a of ACHIEVEMENTS) {
     if (achievUnlocked.has(a.id)) continue;
-    try { if (a.check(stats)) { achievUnlocked.add(a.id); saveAchievs(); showAchievToast(a); } } catch (e) {}
+    try {
+      if (a.check(stats)) {
+        achievUnlocked.add(a.id); saveAchievs();
+        if (typeof BIG_ACHIEVEMENTS !== "undefined" && BIG_ACHIEVEMENTS.has(a.id)) {
+          showAchievBig(a);
+        } else {
+          showAchievToast(a);
+        }
+      }
+    } catch (e) {}
   }
 }
 
@@ -773,12 +782,16 @@ function onGuess(isBefore) {
   if (correct && bottomEvent.y < 0) { stats.ancientCorrect = (stats.ancientCorrect||0) + 1; saveStats(); }
 
   if (correct) {
+    haptic(15);
+    flipCard(el.cardBottom);
     combo++;
     if ((stats.maxCombo||0) < combo) { stats.maxCombo = combo; saveStats(); checkAchievements(); }
     let mult = comboMultiplier(combo);
     if (pendingDoublePoints) { mult *= 2; pendingDoublePoints = false; }
     let gain = mult + (isFast ? 1 : 0);
     score += gain;
+    const cb = el.cardBottom.getBoundingClientRect();
+    spawnParticles(cb.left + cb.width / 2, cb.top + cb.height / 2, 14);
     if (score > best && mode !== "daily") {
       best = score;
       STORE.set(bestKey(mode), best);
@@ -812,6 +825,7 @@ function onGuess(isBefore) {
       }
     }, 850);
   } else {
+    haptic([80, 30, 80]);
     combo = 0;
     updateComboUI(false);
     Sound.wrong();
@@ -1236,12 +1250,19 @@ function showMenu() {
   el.best.textContent = best;
   updatePoolCount();
   refreshDailyCardUI();
+  refreshOnThisDay();
 }
 function startFromMenu() {
   if (mode !== "daily" && buildPool().length < 2) return;
-  el.menu.classList.add("hidden");
-  el.app.classList.remove("hidden");
-  newGame();
+  el.menu.classList.add("slide-out");
+  setTimeout(() => {
+    el.menu.classList.remove("slide-out");
+    el.menu.classList.add("hidden");
+    el.app.classList.remove("hidden");
+    el.app.classList.add("slide-in");
+    setTimeout(() => el.app.classList.remove("slide-in"), 450);
+    newGame();
+  }, 320);
 }
 function refreshDailyCardUI() {
   const r = dailyResult();
@@ -1841,8 +1862,167 @@ function setupCardTilt() {
   });
 }
 
+// ---------- PWA ----------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+
+// ---------- Haptics ----------
+function haptic(pattern) {
+  if (navigator.vibrate) try { navigator.vibrate(pattern); } catch (e) {}
+}
+
+// ---------- Sonidos mejorados (acordes Web Audio) ----------
+function playChord(freqs, dur, type = "triangle", vol = 0.13) {
+  if (!Sound.ready) return;
+  const ctx = Sound.ctx, now = ctx.currentTime;
+  freqs.forEach((f, i) => {
+    const o = ctx.createOscillator(); o.type = type; o.frequency.value = f;
+    const g = ctx.createGain(); g.gain.value = vol;
+    o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(vol, now + i * 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.03 + dur);
+    o.start(now + i * 0.03); o.stop(now + i * 0.03 + dur + 0.02);
+  });
+}
+const _origCorrect = Sound.correct;
+Sound.correct = function() { playChord([523, 659, 784], 0.18); };
+const _origWrong = Sound.wrong;
+Sound.wrong = function() { playChord([220, 174], 0.35, "sawtooth", 0.16); };
+
+// ---------- Tutorial ----------
+const TUT_KEY = "ad_tutorial_seen_v1";
+let tutStep = 0;
+function maybeShowTutorial() {
+  if (STORE.get(TUT_KEY, false)) return;
+  document.getElementById("tutorial").classList.remove("hidden");
+  tutStep = 0;
+  renderTutStep();
+}
+function renderTutStep() {
+  document.querySelectorAll(".tut-step").forEach((n, i) => { n.hidden = i !== tutStep; });
+  document.querySelectorAll(".tut-dot").forEach((d, i) => d.classList.toggle("active", i === tutStep));
+  const last = tutStep === document.querySelectorAll(".tut-step").length - 1;
+  document.getElementById("tutNext").textContent = last ? "¡EMPEZAR!" : "SIGUIENTE";
+}
+function tutNext() {
+  const total = document.querySelectorAll(".tut-step").length;
+  tutStep++;
+  if (tutStep >= total) { tutClose(); return; }
+  renderTutStep();
+}
+function tutClose() {
+  STORE.set(TUT_KEY, true);
+  document.getElementById("tutorial").classList.add("hidden");
+}
+
+// ---------- Efeméride "Hoy hace X años" ----------
+function pickOnThisDay() {
+  const today = new Date();
+  const cy = today.getFullYear();
+  // Deltas redondos interesantes
+  const rounds = [5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 500, 1000];
+  const candidates = [];
+  for (const e of EVENTS) {
+    const delta = cy - e.y;
+    if (rounds.includes(delta)) candidates.push({ ev: e, delta });
+  }
+  if (!candidates.length) return null;
+  // Seed por fecha para ser consistente todo el día
+  const seed = today.getFullYear() * 10000 + (today.getMonth()+1) * 100 + today.getDate();
+  const rng = mulberry32(seed);
+  return candidates[Math.floor(rng() * candidates.length)];
+}
+function refreshOnThisDay() {
+  const otd = pickOnThisDay();
+  const box = document.getElementById("onThisDay");
+  if (!otd || !box) { if (box) box.classList.add("hidden"); return; }
+  const txt = document.getElementById("otdText");
+  txt.textContent = `Hace ${otd.delta} años: ${otd.ev.t}`;
+  box.classList.remove("hidden");
+}
+
+// ---------- Partículas doradas (+1 burst) ----------
+function spawnParticles(x, y, n = 14) {
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement("div");
+    p.className = "particle";
+    p.style.left = x + "px";
+    p.style.top = y + "px";
+    const angle = (Math.PI * 2 * i) / n + (Math.random() - .5) * 0.6;
+    const dist = 50 + Math.random() * 50;
+    p.style.setProperty("--px", Math.cos(angle) * dist + "px");
+    p.style.setProperty("--py", Math.sin(angle) * dist + "px");
+    p.style.animationDuration = (.6 + Math.random() * .5) + "s";
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1200);
+  }
+}
+
+// ---------- Confetti con formas variadas ----------
+const _origConfetti = window.confetti;
+function fancyConfetti(count = 50) {
+  const colors = ["#ffd166", "#06d6a0", "#ef476f", "#5b6cf5", "#f77f00", "#9b5de5", "#4cc9f0"];
+  const shapes = ["", "star", "heart", "bolt"];
+  for (let i = 0; i < count; i++) {
+    const c = document.createElement("div");
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    c.className = "confetti" + (shape ? " " + shape : "");
+    c.style.left = (Math.random() * 100) + "vw";
+    c.style.top = "-20px";
+    if (!shape) c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = (Math.random() * 0.5) + "s";
+    c.style.animationDuration = (1.5 + Math.random() * 0.9) + "s";
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2800);
+  }
+}
+window.confetti = fancyConfetti;
+
+// ---------- Card flip ----------
+function flipCard(card) {
+  card.classList.add("flipping");
+  setTimeout(() => card.classList.remove("flipping"), 900);
+}
+
+// ---------- Modal grande de logro (para hitos importantes) ----------
+const BIG_ACHIEVEMENTS = new Set([
+  "combo_25", "combo_50", "daily_perfect", "streak_30", "all_cats", "answered_2000"
+]);
+function showAchievBig(a) {
+  document.getElementById("abIco").textContent = a.icon;
+  document.getElementById("abName").textContent = a.name;
+  document.getElementById("abDesc").textContent = a.desc;
+  document.getElementById("achievBig").classList.add("show");
+  fancyConfetti(60);
+  haptic([20, 60, 20, 60, 100]);
+}
+function closeAchievBig() { document.getElementById("achievBig").classList.remove("show"); }
+
+// ---------- Accesibilidad ----------
+const A11Y_KEY = "ad_a11y_v1";
+const LARGE_KEY = "ad_large_v1";
+function applyA11y(mode) {
+  if (!mode || mode === "default") document.body.removeAttribute("data-a11y");
+  else document.body.setAttribute("data-a11y", mode);
+  STORE.set(A11Y_KEY, mode || "default");
+}
+function applyLargeText(on) {
+  if (on) document.body.setAttribute("data-large", "1");
+  else document.body.removeAttribute("data-large");
+  STORE.set(LARGE_KEY, !!on);
+}
+
+// ---------- Atajos teclado overlay ----------
+function showShortcuts() { document.getElementById("shortcuts").classList.remove("hidden"); }
+function closeShortcuts() { document.getElementById("shortcuts").classList.add("hidden"); }
+
 window.addEventListener("DOMContentLoaded", () => {
   initBackgroundFX();
+  applyA11y(STORE.get(A11Y_KEY, "default"));
+  applyLargeText(STORE.get(LARGE_KEY, false));
   // Tema persistido
   applyTheme(STORE.get(THEME_KEY, "default"));
 
@@ -1968,6 +2148,7 @@ window.addEventListener("DOMContentLoaded", () => {
       return;
     }
     if (e.key === "Escape") { showMenu(); return; }
+    if (e.key === "?" || (e.shiftKey && e.key === "?")) { showShortcuts(); return; }
     if (locked) return;
     if (mode === "timeline" || mode === "year_exact" || mode === "decade") return;
     if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "a" || e.key === "A") { Sound.init(); onGuess(true); }
@@ -1978,5 +2159,39 @@ window.addEventListener("DOMContentLoaded", () => {
 
   setupSwipe();
   setupCardTilt();
+
+  // Tutorial
+  document.getElementById("tutNext").addEventListener("click", tutNext);
+  document.getElementById("tutSkip").addEventListener("click", tutClose);
+
+  // Atajos teclado overlay
+  document.getElementById("helpBtn").addEventListener("click", showShortcuts);
+  document.getElementById("closeShortcuts").addEventListener("click", closeShortcuts);
+
+  // Modal logro grande
+  document.getElementById("abClose").addEventListener("click", closeAchievBig);
+
+  // Accesibilidad
+  document.querySelectorAll("#a11yButtons [data-a11y]").forEach(b => {
+    b.addEventListener("click", () => {
+      Sound.click();
+      const v = b.dataset.a11y;
+      applyA11y(v);
+      document.querySelectorAll("#a11yButtons [data-a11y]").forEach(x => x.classList.toggle("active", x.dataset.a11y === v));
+    });
+  });
+  document.getElementById("largeTextBtn").addEventListener("click", () => {
+    Sound.click();
+    const on = !document.body.hasAttribute("data-large");
+    applyLargeText(on);
+    document.getElementById("largeTextBtn").classList.toggle("active", on);
+  });
+  // Set inicial active basado en state
+  const initA11y = STORE.get(A11Y_KEY, "default");
+  document.querySelectorAll("#a11yButtons [data-a11y]").forEach(b => b.classList.toggle("active", b.dataset.a11y === initA11y));
+  if (STORE.get(LARGE_KEY, false)) document.getElementById("largeTextBtn").classList.add("active");
+
   showMenu();
+  refreshOnThisDay();
+  setTimeout(maybeShowTutorial, 600);
 });
