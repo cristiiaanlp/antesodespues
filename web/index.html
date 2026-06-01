@@ -553,6 +553,11 @@
   .mode[data-mode="timeline"]   { --mode-color: #06d6a0; --mode-color-soft: rgba(6,214,160,.4); }
   .mode[data-mode="year_exact"] { --mode-color: #4cc9f0; --mode-color-soft: rgba(76,201,240,.4); }
   .mode[data-mode="decade"]     { --mode-color: #9b5de5; --mode-color-soft: rgba(155,93,229,.4); }
+  .mode[data-mode="marathon"]   { --mode-color: #f97316; --mode-color-soft: rgba(249,115,22,.4); }
+  .mode.mode-special {
+    background: linear-gradient(160deg, rgba(249,115,22,.10), var(--card-bg));
+    border-color: rgba(249,115,22,.35);
+  }
 
   /* Categorías */
   .cats-controls { display: flex; gap: 8px; margin-bottom: 12px; }
@@ -1121,6 +1126,69 @@
   body[data-large] .card-title { font-size: 22px; }
   body[data-large] .card-year { font-size: 64px; }
 
+  /* ============ MARATHON HUD ============ */
+  #marathonHud { display: none; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px;
+    background: linear-gradient(135deg, rgba(249,115,22,.22), rgba(239,71,111,.16));
+    border: 1px solid rgba(249,115,22,.5);
+    font-family: var(--display); font-weight: 400; font-size: 14px; letter-spacing: 1px;
+    color: #ffd6a8; box-shadow: 0 4px 16px rgba(249,115,22,.25);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #marathonHud.show { display: inline-flex; }
+  #marathonHud .m-hud-ico { color: #ffd6a8; font-size: 15px; }
+  #marathonHud .m-lives { color: var(--red); letter-spacing: 0; font-size: 14px; font-family: var(--body); }
+
+  /* ============ RIPPLE EFFECT ============ */
+  .ripple-host { position: relative; overflow: hidden; }
+  .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,.35);
+    transform: scale(0); animation: rippleAnim .65s ease-out forwards; pointer-events: none;
+    mix-blend-mode: overlay; }
+  @keyframes rippleAnim { to { transform: scale(1); opacity: 0; } }
+
+  /* ============ SCORE FLASH ============ */
+  .score .num.flash { animation: scoreFlash .55s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes scoreFlash {
+    0%   { transform: scale(1); color: var(--gold); text-shadow: 0 0 12px rgba(255,209,102,.35); }
+    35%  { transform: scale(1.4) rotate(-3deg); color: #fff; text-shadow: 0 0 30px rgba(255,209,102,1), 0 0 60px rgba(247,127,0,.7); }
+    100% { transform: scale(1) rotate(0); color: var(--gold); text-shadow: 0 0 12px rgba(255,209,102,.35); }
+  }
+
+  /* ============ YEAR REVEAL PULSE ============ */
+  .card-year.revealing { animation: yearReveal .8s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes yearReveal {
+    0%   { transform: scale(.5); opacity: 0; filter: blur(8px); }
+    50%  { transform: scale(1.18); opacity: 1; filter: blur(0); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ============ COMBO SCREEN GLOW ============ */
+  #comboGlow { position: fixed; inset: 0; z-index: 5; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(255,107,0,.18) 100%);
+    transition: opacity .4s; mix-blend-mode: screen; }
+  #comboGlow.active { opacity: 1; }
+  #comboGlow.intense { background: radial-gradient(ellipse at center, transparent 35%, rgba(247,37,133,.30) 100%); }
+
+  /* ============ MILESTONE FULL-SCREEN FLASH ============ */
+  #milestoneFlash { position: fixed; inset: 0; z-index: 110; pointer-events: none;
+    background: radial-gradient(circle at center, rgba(255,209,102,.7) 0%, rgba(247,127,0,.3) 30%, transparent 70%);
+    opacity: 0; }
+  #milestoneFlash.fire { animation: milestoneFire .9s ease-out; }
+  @keyframes milestoneFire {
+    0% { opacity: 0; transform: scale(.7); }
+    20% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.2); }
+  }
+  .milestone-text { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.5);
+    z-index: 111; pointer-events: none; font-family: var(--display); font-size: 110px; font-weight: 400;
+    letter-spacing: 4px; color: var(--gold);
+    text-shadow: 0 0 40px rgba(255,209,102,.9), 0 0 80px rgba(247,127,0,.7), 0 4px 12px rgba(0,0,0,.6);
+    animation: milestoneText 1.4s cubic-bezier(.34,1.56,.64,1) forwards; }
+  @keyframes milestoneText {
+    0%   { opacity: 0; transform: translate(-50%,-50%) scale(.4) rotate(-8deg); }
+    25%  { opacity: 1; transform: translate(-50%,-50%) scale(1.15) rotate(2deg); }
+    70%  { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(0); }
+    100% { opacity: 0; transform: translate(-50%,-65%) scale(.95) rotate(0); }
+  }
+
   /* Botón help flotante (atajos / ayuda) */
   .help-btn { position: fixed; bottom: 16px; right: 16px; z-index: 70;
     width: 36px; height: 36px; border-radius: 50%;
@@ -1140,6 +1208,8 @@
   </div>
   <div class="bg-stars" id="bgStars" aria-hidden="true"></div>
   <div class="spotlight" id="spotlight" aria-hidden="true"></div>
+  <div id="comboGlow" aria-hidden="true"></div>
+  <div id="milestoneFlash" aria-hidden="true"></div>
 
   <div id="app" class="hidden">
     <header>
@@ -1150,6 +1220,7 @@
       </div>
       <div id="scoreboard">
         <div id="timerBox"><span class="timer-ico">⏱</span><span id="timer">60</span></div>
+        <div id="marathonHud"><iconify-icon icon="lucide:mountain" class="m-hud-ico"></iconify-icon><b><span id="marathonRound">1</span>/100</b><span class="m-lives" id="marathonLives">♥♥♥</span></div>
         <div id="comboBox"><span class="flame">🔥</span><span id="comboNum">0</span><span id="comboMult">×1</span></div>
         <div class="score" aria-live="polite"><span class="label">PUNTOS</span><span id="score" class="num">0</span></div>
         <div class="score"><span class="label">RÉCORD</span><span id="best" class="num">0</span></div>
@@ -1300,6 +1371,11 @@
           <iconify-icon class="mode-ico" icon="lucide:calendar-days"></iconify-icon>
           <div class="mode-name">DÉCADA</div>
           <div class="mode-desc">Elige la década</div>
+        </div>
+        <div class="mode mode-special" data-mode="marathon">
+          <iconify-icon class="mode-ico" icon="lucide:mountain"></iconify-icon>
+          <div class="mode-name">MARATÓN</div>
+          <div class="mode-desc">100 cartas · 3 vidas</div>
         </div>
       </div>
     </div>

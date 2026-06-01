@@ -22,6 +22,7 @@ const MODES = {
   timeline:   { label: "TIMELINE",     sub: "Ordena 4 cartas por fecha" },
   year_exact: { label: "AÑO EXACTO",   sub: "Adivina el año con margen" },
   decade:     { label: "DÉCADA",       sub: "Elige la década correcta" },
+  marathon:   { label: "MARATÓN",      sub: "100 cartas. Dificultad creciente. 3 vidas." },
   multi:      { label: "MULTIJUGADOR", sub: "Pase-y-juega entre amigos" },
 };
 const HARD_THRESHOLD   = 20;
@@ -64,6 +65,7 @@ const MODE_ICONS = {
   timeline:   "lucide:ruler",
   year_exact: "lucide:target",
   decade:     "lucide:calendar-days",
+  marathon:   "lucide:mountain",
   daily:      "lucide:sparkles",
   multi:      "lucide:users-round",
 };
@@ -673,6 +675,7 @@ function newGame() {
   if (mode === "timeline") return newTimelineGame();
   if (mode === "year_exact") return newYearGame();
   if (mode === "decade") return newDecadeGame();
+  if (mode === "marathon") return newMarathonGame();
   if (mode === "multi") return newMultiGame();
 
   setupModeUI();
@@ -770,11 +773,12 @@ function onGuess(isBefore) {
   const isFast = correct && reactionMs > 100 && reactionMs < REACTION_MS;
   if (isFast) { stats.fastAnswers = (stats.fastAnswers||0) + 1; saveStats(); }
 
-  // Reveal year with animated count-up
+  // Reveal year with animated count-up + pulse
   const yearEl = el.cardBottom.querySelector(".card-year");
   yearEl.classList.remove("hidden-q");
   yearEl.style.color = correct ? "var(--green)" : "var(--red)";
   animateYear(yearEl, bottomEvent.y, 550);
+  pulseYear(yearEl);
 
   trackAnswer(bottomEvent.c, correct);
   answerLog.push({ event: bottomEvent, isCorrect: correct, userAnswer: isBefore ? "antes" : "después", deltaMs: reactionMs });
@@ -807,9 +811,12 @@ function onGuess(isBefore) {
     popText(txt, r.left + r.width / 2, r.top + 20);
     maybeDropPowerup(combo);
 
+    flashScore();
+    refreshComboGlow();
     if (score === 10 || score === 25 || score === 50 || score === 100) {
       confetti(50 + Math.min(score, 80));
       Sound.milestone();
+      showMilestoneText(score + (score === 100 ? " ¡EPIC!" : " seguidas!"));
     }
 
     setTimeout(() => {
@@ -820,6 +827,12 @@ function onGuess(isBefore) {
       } else if (mode === "multi") {
         multiAdvance(true);
         advanceRound();
+      } else if (mode === "marathon") {
+        marathonRound++;
+        marathonCheckpoint(marathonRound);
+        refreshMarathonHud();
+        if (marathonRound > MARATHON_LENGTH) { gameOver(false); return; }
+        advanceRound();
       } else {
         advanceRound();
       }
@@ -828,6 +841,7 @@ function onGuess(isBefore) {
     haptic([80, 30, 80]);
     combo = 0;
     updateComboUI(false);
+    refreshComboGlow();
     Sound.wrong();
     el.cardBottom.classList.add("wrong");
 
@@ -856,6 +870,30 @@ function onGuess(isBefore) {
         const alive = multiPlayersList.filter(p => p.lives > 0);
         if (alive.length > 1) advanceRound();
       }, 1100);
+    } else if (mode === "marathon") {
+      // Marathon: si hay vida extra de power-up, salva
+      if (pendingExtraLife) {
+        pendingExtraLife = false;
+        const r = el.cardBottom.getBoundingClientRect();
+        popText("❤️ SALVADO", r.left + r.width/2, r.top + 20, "var(--green)");
+        setTimeout(() => {
+          el.cardBottom.classList.remove("wrong");
+          marathonRound++;
+          refreshMarathonHud();
+          if (marathonRound > MARATHON_LENGTH) { gameOver(false); return; }
+          advanceRound();
+        }, 1100);
+      } else {
+        marathonLives--;
+        refreshMarathonHud();
+        setTimeout(() => {
+          el.cardBottom.classList.remove("wrong");
+          if (marathonLives <= 0) { gameOver(false); return; }
+          marathonRound++;
+          if (marathonRound > MARATHON_LENGTH) { gameOver(false); return; }
+          advanceRound();
+        }, 1100);
+      }
     } else {
       // Clásico/Difícil: si hay vida extra, salva la partida
       if (pendingExtraLife) {
@@ -885,6 +923,8 @@ function advanceRound() {
     topEvent = bottomEvent;
     if (mode === "daily") {
       bottomEvent = dailyRoster[dailyRound + 1] || null;
+    } else if (mode === "marathon") {
+      bottomEvent = pickNextMarathon(topEvent);
     } else {
       bottomEvent = pickNext(topEvent);
     }
@@ -1216,6 +1256,7 @@ function renderCategoryChips() {
     });
     el.catList.appendChild(chip);
   }
+  if (typeof attachRipples === "function") attachRipples(".cat-chip");
 }
 function updatePoolCount() {
   const n = buildPool().length;
@@ -1325,6 +1366,151 @@ function setupSwipe() {
   }, { passive: true });
 }
 
+// ---------- Modo Marathon ----------
+const MARATHON_LENGTH = 100;
+let marathonRound = 0;
+let marathonLives = 3;
+function marathonMaxDiff(round) {
+  if (round <= 10) return 100;
+  if (round <= 25) return 60;
+  if (round <= 50) return 30;
+  if (round <= 75) return 15;
+  if (round <= 90) return 8;
+  return 3;
+}
+function pickNextMarathon(currentTop) {
+  if (!queue.length) queue = shuffle(pool.filter(e => e.w !== currentTop.w));
+  const maxDiff = marathonMaxDiff(marathonRound);
+  for (let i = queue.length - 1; i >= 0; i--) {
+    const c = queue[i];
+    const diff = Math.abs(c.y - currentTop.y);
+    if (diff > 0 && diff <= maxDiff && c.w !== currentTop.w) {
+      queue.splice(i, 1);
+      return c;
+    }
+  }
+  // relax si no se encuentra
+  for (let i = queue.length - 1; i >= 0; i--) {
+    const c = queue[i];
+    if (c.w !== currentTop.w) { queue.splice(i, 1); return c; }
+  }
+  return queue.pop();
+}
+function newMarathonGame() {
+  setupModeUI();
+  pool = buildPool();
+  if (pool.length < 2) { showMenu(); return; }
+  queue = shuffle(pool);
+  topEvent = queue.pop();
+  marathonRound = 1;
+  marathonLives = 3;
+  bottomEvent = pickNextMarathon(topEvent);
+  score = 0; combo = 0;
+  answerLog = [];
+  activePowerups = [];
+  pendingDoublePoints = false; pendingExtraLife = false;
+  pendingImmune = false; pendingInvert = false; pendingFog = false; pendingBlur = false;
+  renderPowerups();
+  best = STORE.get(bestKey(mode), 0);
+  updateScore();
+  updateComboUI(false);
+  resetLifelines();
+  refreshMarathonHud();
+  renderCard(el.cardTop, topEvent, true);
+  renderCard(el.cardBottom, bottomEvent, false);
+  el.gameOver.classList.add("hidden");
+  setButtons(true);
+  locked = false;
+  stopTimer();
+  questionStartMs = Date.now();
+}
+function refreshMarathonHud() {
+  const hud = document.getElementById("marathonHud");
+  if (!hud) return;
+  if (mode === "marathon") {
+    hud.classList.add("show");
+    document.getElementById("marathonRound").textContent = marathonRound;
+    document.getElementById("marathonLives").textContent = "♥".repeat(marathonLives) + "♡".repeat(3 - marathonLives);
+  } else {
+    hud.classList.remove("show");
+  }
+}
+function marathonCheckpoint(round) {
+  // Cada 10 rondas: confeti pequeño. 25/50/75 grandes. 100 = victoria épica
+  if (round === 100) {
+    fancyConfetti(180);
+    showMilestoneText("¡MARATÓN COMPLETADO!");
+    Sound.milestone();
+    return;
+  }
+  if (round === 25 || round === 50 || round === 75) {
+    fancyConfetti(80);
+    showMilestoneText(round + " / 100");
+    Sound.milestone();
+  } else if (round % 10 === 0) {
+    fancyConfetti(28);
+  }
+}
+
+// ---------- Score flash ----------
+function flashScore() {
+  if (!el.score) return;
+  el.score.classList.remove("flash");
+  void el.score.offsetWidth;
+  el.score.classList.add("flash");
+  setTimeout(() => el.score.classList.remove("flash"), 700);
+}
+
+// ---------- Year reveal pulse ----------
+function pulseYear(yearEl) {
+  if (!yearEl) return;
+  yearEl.classList.remove("revealing");
+  void yearEl.offsetWidth;
+  yearEl.classList.add("revealing");
+  setTimeout(() => yearEl.classList.remove("revealing"), 900);
+}
+
+// ---------- Combo glow ----------
+function refreshComboGlow() {
+  const g = document.getElementById("comboGlow");
+  if (!g) return;
+  if (combo >= 10)      { g.classList.add("active", "intense"); }
+  else if (combo >= 5)  { g.classList.add("active"); g.classList.remove("intense"); }
+  else                  { g.classList.remove("active", "intense"); }
+}
+
+// ---------- Milestone text overlay ----------
+function showMilestoneText(txt) {
+  const flash = document.getElementById("milestoneFlash");
+  if (flash) { flash.classList.remove("fire"); void flash.offsetWidth; flash.classList.add("fire"); }
+  const t = document.createElement("div");
+  t.className = "milestone-text";
+  t.textContent = txt;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1500);
+}
+
+// ---------- Ripple effect ----------
+function spawnRipple(host, ev) {
+  const r = host.getBoundingClientRect();
+  const ripple = document.createElement("span");
+  ripple.className = "ripple";
+  const size = Math.max(r.width, r.height) * 2;
+  ripple.style.width = ripple.style.height = size + "px";
+  ripple.style.left = (ev.clientX - r.left - size / 2) + "px";
+  ripple.style.top  = (ev.clientY - r.top  - size / 2) + "px";
+  host.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 700);
+}
+function attachRipples(selector) {
+  document.querySelectorAll(selector).forEach(el => {
+    if (el.dataset.ripple) return;
+    el.dataset.ripple = "1";
+    el.classList.add("ripple-host");
+    el.addEventListener("click", (e) => spawnRipple(el, e));
+  });
+}
+
 // ---------- Setup UI por modo ----------
 function setupModeUI() {
   el.cards.classList.remove("hidden");
@@ -1337,6 +1523,7 @@ function setupModeUI() {
   document.querySelector(".vs").style.display = "";
   el.cardTop.style.display = "";
   el.dailyBadge.classList.remove("show");
+  refreshMarathonHud();
 
   if (mode === "year_exact" || mode === "decade") {
     el.cardTop.style.display = "none";
@@ -2159,6 +2346,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   setupSwipe();
   setupCardTilt();
+  attachRipples(".mode, .cat-chip, .btn-action, .btn-play, .btn-secondary, .btn-restart, .btn-share, .btn-stats, .btn-back, .lifeline");
 
   // Tutorial
   document.getElementById("tutNext").addEventListener("click", tutNext);
